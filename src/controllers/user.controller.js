@@ -184,9 +184,93 @@ catch(error){
 }
 
 })
+const changeCurrentPassword=asyncHandler(async()=>{
+    const {oldPassword,newPassword}=req.body
+ const user= await User.findById( req.user?._id)
+const isPasswordCorrect=await user.isPasswordCorrect(oldPassword)
+if(!isPasswordCorrect){
+    throw new ApiError(400,"Invalid password")
+}
+user.password=newPassword
+await user.save({validateBeforeSave:false})
+return res.status(200)
+.json(new ApiResponse(200,{},"Password changed successfully"))
+})
+const getCurrentUser=asyncHandler(async(req,res)=>{
+    return res.status(200)
+    .json(200,req.user,"current user fetched successfully")
+})
+const updateAccountDetails=asyncHandler(async(req,res)=>{
+    const {fullName,email}=req.body
+    if(!fullName || !email){
+        throw new ApiError(400,"All fields are required")
+    }
+ const user=  User?.findByIdAndUpdate(req.user?._id,
+    {
+        $set:{
+            fullName,
+            email
+        }
+    }
+    ,{new :true}
+   ).select
+   return res.status(200).json(new ApiError(200,user,"account details updated details"))
+})
+const updateAvtaar=asyncHandler(async(req,res)=>{
+const avtaarLocalPath=req.file?.path
+if(!avtaarLocalPath){
+    throw new ApiError(400,"Avtaar file is missing")
+}
+const avtaar=await uploadOnCloudinary(avtaarLocalPath)
+if(!avtaar.url){
+    throw new ApiError(400,"Error while uploading on cloudinary on Avtaar")
+}
+ const user=await  User.findByIdAndUpdate(
+    req._user?._id,
+{
+    $set:{
+        avtaar:avtaar.url
+    }
+},
+{new:true}
+).select("-password")
+return res .status(200)
+    .json(
+        new ApiResponse(200,user,"CoverImage updated Successfully")
+    )
+})
+
+const updateCoverImage=asyncHandler(async(req,res)=>{
+    const coverImageLocalPath=req.file?.path
+    if(!coverImageLocalPath){
+        throw new ApiError(400,"coverImage file is missing")
+    }
+    const coverImage=await uploadOnCloudinary(coverImageLocalPath)
+    if(!coverImage.url){
+        throw new ApiError(400,"Error while uploading on cloudinary on coverImage")
+    }
+    const user=await  User.findByIdAndUpdate(
+        req._user?._id,
+    {
+        $set:{
+            coverImage:coverImage.url
+        }
+    },
+    {new:true}
+    ).select("-password")
+    return res .status(200)
+    .json(
+        new ApiResponse(200,user,"coverImage updated Successfully")
+    )
+    })
 export {
     registerUser,
     loginUser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    getCurrentUser,
+    changeCurrentPassword
+    ,updateAccountDetails,
+    updateAvtaar,
+    updateCoverImage
 }
